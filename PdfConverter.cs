@@ -1,8 +1,12 @@
+using PdfSharp.Drawing;
+using PdfSharp.Pdf;
+using PdfSharp.Pdf.IO;
+
 namespace PdfConv;
 
 public class PdfConverter
 {
-    public static List<string> PdfToImages(string pdfPath)
+    public List<string> PdfToImages(string pdfPath)
     {
         List<string> imagesPaths = new List<string>();
 
@@ -17,10 +21,10 @@ public class PdfConverter
                 PdfPage page = document.Pages[i];
 
                 // Utwórz obraz dla strony
-                using (Bitmap bitmap = RenderPdfPageToBitmap(page, 300, 300))
+                using (var bitmap = RenderPdfPageToBitmap(page, 300, 300))
                 {
                     string imagePath = $"Page_{i + 1}.png"; // Nazwa pliku
-                    bitmap.Save(imagePath, ImageFormat.Png); // Zapisz jako PNG
+                    bitmap.Save(imagePath, XImageFormat.Png); // Zapisz jako PNG
                     imagesPaths.Add(imagePath);
 
                     Console.WriteLine($"Strona {i + 1} zapisana jako obraz: {imagePath}");
