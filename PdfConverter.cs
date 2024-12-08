@@ -1,6 +1,6 @@
-using PdfSharp.Drawing;
-using PdfSharp.Pdf;
-using PdfSharp.Pdf.IO;
+using System.Drawing;
+using iText;
+using iText.Kernel.Pdf;
 
 namespace PdfConv;
 
@@ -13,22 +13,24 @@ public class PdfConverter
         try
         {
             // Otwórz dokument PDF
-            PdfDocument document = PdfReader.Open(pdfPath, PdfDocumentOpenMode.ReadOnly);
-
-            // Iteruj przez strony PDF
-            for (int i = 0; i < document.PageCount; i++)
+            using(PdfReader pdfReader = new PdfReader(pdfPath))
+            using(PdfDocument pdfDocument = new PdfDocument(pdfReader))
             {
-                PdfPage page = document.Pages[i];
+            // Iteruj przez strony PDF
+            for (int i = 1; i <= pdfDocument.GetNumberOfPages(); i++)
+            {
+                PdfPage page = pdfDocument.GetPage(i);
 
                 // Utwórz obraz dla strony
-                using (var bitmap = RenderPdfPageToBitmap(page, 300, 300))
+                using (Bitmap bitmap = RenderPdfPageToBitmap(page, 300, 300))
                 {
                     string imagePath = $"Page_{i + 1}.png"; // Nazwa pliku
-                    bitmap.Save(imagePath, XImageFormat.Png); // Zapisz jako PNG
+                    bitmap.Save(imagePath, XImageFormat.png); // Zapisz jako PNG
                     imagesPaths.Add(imagePath);
 
                     Console.WriteLine($"Strona {i + 1} zapisana jako obraz: {imagePath}");
                 }
+            }
             }
         }
         catch (Exception ex)
