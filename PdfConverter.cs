@@ -1,20 +1,20 @@
 using System.Drawing;
 using PdfiumViewer;
 
-namespace PdfConv;
+namespace Randomly;
 
 public class PdfConverter
 {
     public List<string> PdfToImages(string pdfPath)
     {
         List<string> imagesPaths = new List<string>();
-
+        string subfolder = GetSubfolder(pdfPath);
+        Globals.Subfolder = subfolder;
         try
         {
             // Otwórz dokument PDF
             using(PdfDocument pdfDocument = PdfDocument.Load(pdfPath))
             {
-            string subfolder = GetSubfolder(pdfPath);
             // Iteruj przez strony PDF
             for (int i = 0; i < pdfDocument.PageCount; i++)
             {
@@ -56,4 +56,5 @@ public class PdfConverter
         }
         return subfolder;
     }
+
 }
