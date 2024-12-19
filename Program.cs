@@ -16,11 +16,12 @@ public class Program
         // Konwersja na png
         List<string> images = pdfConverter.PdfToImages(pdfPath);
 
+        string exctractedText;
         // OCR
         OCReader oCReader = new();
         foreach (string imagePath in images)
         {
-            string exctractedText = oCReader.PerformOCR(imagePath);
+            exctractedText = oCReader.PerformOCR(imagePath);
 
             if (!string.IsNullOrWhiteSpace(exctractedText))
             {

@@ -11,7 +11,7 @@ public class OCReader
     {
         try
         {
-            using(var ocrEngine = new TesseractEngine(@"./tessdata","pol", EngineMode.Default))
+            using(var ocrEngine = new TesseractEngine(@"./../../../tessdata",language: "pol", EngineMode.Default))
                 using(Pix img = Pix.LoadFromFile(imagePath))
                     using (Page page = ocrEngine.Process(img))
                     {
