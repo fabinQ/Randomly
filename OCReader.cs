@@ -1,7 +1,9 @@
 using System;
 using iText.Kernel.Pdf.Annot.DA;
 using iText.Layout.Element;
+using iText.Layout.Hyphenation;
 using Tesseract;
+
 
 namespace Randomly;
 
@@ -11,7 +13,7 @@ public class OCReader
     {
         try
         {
-            using(var ocrEngine = new TesseractEngine(@"./../../../tessdata",language: "pol", EngineMode.Default))
+            using(var ocrEngine = new TesseractEngine(@"./../../../tessdata",language: "pol", EngineMode.TesseractAndLstm, @"C:\Users\Hyperbook\Documents\Maciej\Randomly\tessdata\numbers_configfile.txt"))
                 using(Pix img = Pix.LoadFromFile(imagePath))
                     using (Page page = ocrEngine.Process(img))
                     {
