@@ -13,12 +13,19 @@ public class OCReader
     {
         try
         {
-            using(var ocrEngine = new TesseractEngine(@"./../../../tessdata",language: "pol", EngineMode.TesseractAndLstm, @"C:\Users\Hyperbook\Documents\Maciej\Randomly\tessdata\numbers_configfile.txt"))
-                using(Pix img = Pix.LoadFromFile(imagePath))
-                    using (Page page = ocrEngine.Process(img))
-                    {
-                        return page.GetText();
-                    }
+            using (var ocrEngine = new TesseractEngine(@"./../../../tessdata", language: "pol", EngineMode.LstmOnly, @"C:\Users\Hyperbook\Documents\Maciej\Randomly\tessdata\numbers_configfile.txt"))
+            using (Pix img = Pix.LoadFromFile(imagePath))
+            {
+                // Increase contrast
+                using (Pix contrastImg = img.ConvertRGBToGray())
+                using (Page page = ocrEngine.Process(contrastImg))
+                {
+                    var confidence = page.GetMeanConfidence();
+                    System.Console.WriteLine(confidence);
+                    return page.GetText();
+                }
+                
+            }
         }
         catch (Exception exception)
         {
