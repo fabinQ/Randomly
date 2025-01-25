@@ -5,26 +5,28 @@ namespace Randomly;
 
 public class PdfConverter
 {
-    public List<string> PdfToImages(string pdfPath)
+
+    public List<string> imagesPaths { get; set; } = new List<string>();
+
+    public void PdfToImages(string pdfPath)
     {
         List<string> imagesPaths = new List<string>();
-        string subfolder = GetSubfolder(pdfPath);
-        Globals.Subfolder = subfolder;
+        
         try
         {
             // Otwórz dokument PDF
             using(PdfDocument pdfDocument = PdfDocument.Load(pdfPath))
             {
             // Iteruj przez strony PDF
-            for (int i = 0; i < pdfDocument.PageCount; i++)
+            for (int i = 1; i <= pdfDocument.PageCount; i++)
             {
                 // Utwórz obraz dla strony
-                using (Bitmap bitmap = RenderPdfPageToBitmap(pdfDocument, i, 300))
+                using (Bitmap bitmap = RenderPdfPageToBitmap(pdfDocument, i-1, 300))
                 {
-                    string imagePath = $"{subfolder}\\Page_{i + 1}.png"; // Nazwa pliku
+                    string imagePath = $"{Globals.Subfolder}\\Page_{i}.png"; // Nazwa pliku
                     bitmap.Save(imagePath); // Zapisz jako PNG
                     imagesPaths.Add(imagePath);
-                    Console.WriteLine($"Strona {i + 1} zapisana jako obraz: {Path.GetFileName(imagePath)}");
+                    Console.WriteLine($"Strona {i} zapisana jako obraz: {Path.GetFileName(imagePath)}");
                 }
             }
             }
@@ -34,27 +36,12 @@ public class PdfConverter
             Console.WriteLine($"Błąd podczas konwersji PDF: {ex.Message}");
         }
 
-        return imagesPaths;
     }
     
     private static Bitmap RenderPdfPageToBitmap(PdfDocument page, int pageIndex, int dpi)
     {
         return (Bitmap)page.Render(pageIndex, dpi, dpi, PdfRenderFlags.CorrectFromDpi);
     }
-    private string GetSubfolder(string dir){
-        string subfolder = Path.GetDirectoryName(dir);
-        // string fileName = Path.GetFileName
-        subfolder = Path.Join(subfolder, Path.GetFileNameWithoutExtension(dir));
-        if (!Directory.Exists(subfolder))
-        {
-            System.Console.WriteLine($"Creating folter: '{subfolder}'");
-            Directory.CreateDirectory(subfolder);
-        }
-        else
-        {
-            System.Console.WriteLine($"'{subfolder}' already exist");
-        }
-        return subfolder;
-    }
+    
 
 }
