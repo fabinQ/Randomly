@@ -1,7 +1,3 @@
-using System;
-using iText.Kernel.Pdf.Annot.DA;
-using iText.Layout.Element;
-using iText.Layout.Hyphenation;
 using Tesseract;
 
 
@@ -35,7 +31,8 @@ public class OCReader
     }
     public void SaveTextToFile(string exctractedText, string imagePath)
     {
-        string outputTextPath = Path.Combine(Globals.Subfolder,Path.GetFileNameWithoutExtension(Globals.PdfPath) + Path.GetFileNameWithoutExtension(imagePath)+"_OCR.txt") ;
+        string subfolder = Globals.Subfolder ?? throw new ArgumentNullException("Subfolder cannot be null");
+        string outputTextPath = Path.Combine(subfolder, Path.GetFileNameWithoutExtension(Globals.PdfPath) + Path.GetFileNameWithoutExtension(imagePath)+"_OCR.txt") ;
         try
         {
             File.WriteAllText(outputTextPath, exctractedText);
