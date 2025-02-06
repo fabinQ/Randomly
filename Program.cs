@@ -6,6 +6,9 @@ namespace Randomly;
 
 public class Program
 {
+    private static Thread pdfThread;
+    private static Thread extractedTextThread;
+    
     private static IEnumerable<string> GetNewPngFiles()
     {
     string folderPath = Globals.Subfolder ?? throw new ArgumentNullException("Subfolder cannot be null");
@@ -43,41 +46,14 @@ public class Program
         }
     }
     }
-    static void Main(string[] args)
+    private static void extractTextFromImages()
     {
-        // Wgranie pliku
-        System.Console.WriteLine("Hello in Randomly! Let's check the numbers. Show me your file...");
-        string pdfPath = @"C:\Users\Hyperbook\Documents\Maciej\Randomly\src\Lotto chybił trafił.pdf";
-        Globals.PdfPath = pdfPath;
-
-        // Konwersja na png
-        PdfConverter pdfConverter = new PdfConverter();
-
-        // Tworzenie podfolderu
-        PdfConverter.CreateSubfolder(pdfPath);
-
-        // Tworzenie wątków
-        Thread pdfThread = new Thread(() => pdfConverter.PdfToImages(pdfPath));
-        pdfThread.Start();
-        
-
+        System.Console.WriteLine("Before join");
+        pdfThread.Join();
+        System.Console.WriteLine("After join");
         // OCR
         string exctractedText;
         OCReader oCReader = new();
-
-        // foreach (string imagePath in subfolder)
-        // {
-        //     exctractedText = oCReader.PerformOCR(imagePath);
-
-        //     if (!string.IsNullOrWhiteSpace(exctractedText))
-        //     {
-        //         oCReader.SaveTextToFile(exctractedText, imagePath);
-        //     }
-        //     else
-        //     {
-        //         System.Console.WriteLine($"No text found in {imagePath}.");
-        //     }
-        // }
 
         foreach (var imagePath in GetNewPngFiles())
         {
@@ -93,8 +69,43 @@ public class Program
             System.Console.WriteLine($"No text found in {imagePath}.");
             }
         }
-        System.Console.WriteLine("Before join");
-        pdfThread.Join();
-        System.Console.WriteLine("After join");
+        System.Console.WriteLine("No more images to process.");
+    }
+    static void Main(string[] args)
+    {
+        // Wgranie pliku
+        System.Console.WriteLine("Hello in Randomly! Let's check the numbers. Show me your file...");
+        string pdfPath = @"C:\Users\Hyperbook\Documents\Maciej\Randomly\src\Lotto chybił trafił.pdf";
+        Globals.PdfPath = pdfPath;
+
+        // Konwersja na png
+        PdfConverter pdfConverter = new PdfConverter();
+
+        // Tworzenie podfolderu
+        PdfConverter.CreateSubfolder(pdfPath);
+
+        pdfThread = new Thread(() => pdfConverter.PdfToImages(pdfPath));
+        pdfThread.Name = "PdfThread";
+        pdfThread.Start();
+        
+        extractedTextThread = new Thread(() => extractTextFromImages());
+        extractedTextThread.Name = "ExtractedTextThread";
+        extractedTextThread.Start();
+
+
+        // foreach (string imagePath in subfolder)
+        // {
+        //     exctractedText = oCReader.PerformOCR(imagePath);
+
+        //     if (!string.IsNullOrWhiteSpace(exctractedText))
+        //     {
+        //         oCReader.SaveTextToFile(exctractedText, imagePath);
+        //     }
+        //     else
+        //     {
+        //         System.Console.WriteLine($"No text found in {imagePath}.");
+        //     }
+        // }
+       
     }
 }
