@@ -1,111 +1,100 @@
-﻿using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
 
-namespace Randomly;
-
-public class Program
+namespace Randomly
 {
-    private static Thread pdfThread;
-    private static Thread extractedTextThread;
-    
-    private static IEnumerable<string> GetNewPngFiles()
+    public class Program
     {
-    string folderPath = Globals.Subfolder ?? throw new ArgumentNullException("Subfolder cannot be null");
-    var existingFiles = new HashSet<string>(Directory.GetFiles(folderPath, "*"+Globals.GetExtendedFromConverionedFile));
-    var newFiles = new List<string>();
-    System.Console.WriteLine($"Watching for new PNG files in '{folderPath}'");
+        private static Thread pdfThread;
+        private static Thread extractedTextThread;
+        private static Thread watchThread;
 
-    using (var watcher = new FileSystemWatcher(folderPath, "*"+Globals.GetExtendedFromConverionedFile))
-    {
-        watcher.Created += (sender, e) =>
+        private static readonly ConcurrentQueue<string> newFiles = new();
+        private static readonly HashSet<string> existingFiles = new();
+        private static string folderPath;
+
+        private static void Watcher()
         {
-            if (!existingFiles.Contains(e.FullPath))
+            folderPath = Globals.Subfolder ?? throw new ArgumentNullException("Subfolder cannot be null");
+
+            foreach (var file in Directory.GetFiles(folderPath, "*" + Globals.GetExtendedFromConverionedFile))
             {
-                newFiles.Add(e.FullPath);
-                existingFiles.Add(e.FullPath);
+                existingFiles.Add(file);
             }
-        };
-        watcher.EnableRaisingEvents = true;
 
-        while (true)
-        {
-            if (newFiles.Count > 0)
+            extractedTextThread = new Thread(ExtractTextFromImages);
+            extractedTextThread.Name = "ExtractedTextThread";
+            extractedTextThread.Start(existingFiles);
+
+            Console.WriteLine($"Watching for new PNG files in '{folderPath}'");
+
+            using var watcher = new FileSystemWatcher(folderPath, "*" + Globals.GetExtendedFromConverionedFile);
+            watcher.Created += (sender, e) =>
             {
-                foreach (var newFile in newFiles.ToList())
+                System.Console.WriteLine($"New file: {e.FullPath}");
+                lock (existingFiles)
                 {
-                    yield return newFile;
-                    newFiles.Remove(newFile);
+
+                    // if (existingFiles.Add(e.FullPath))
+                    // {
+                    //     newFiles.Enqueue(e.FullPath);
+                    // }
+                }
+            };
+            watcher.EnableRaisingEvents = true;        
+            
+            while (true)
+            {
+                Thread.Sleep(500);
+            }
+        }
+
+        private static void ExtractTextFromImages(object filesObj)
+        {
+            OCReader oCReader = new();
+            var files = (HashSet<string>)filesObj;
+            foreach (var imagePath in files)
+            {
+                Console.WriteLine($"Performing OCR on {imagePath}...");
+                string extractedText = oCReader.PerformOCR(imagePath);
+
+                if (!string.IsNullOrWhiteSpace(extractedText))
+                {
+                    oCReader.SaveTextToFile(extractedText, imagePath);
+                }
+                else
+                {
+                    Console.WriteLine($"No text found in {imagePath}.");
                 }
             }
-            else if (!Directory.GetFiles(folderPath, Globals.GetExtendedFromConverionedFile).Any())
-            {
-                yield break;
-            }
-            Thread.Sleep(100); // Adjust the sleep time as needed
-        }
-    }
-    }
-    private static void extractTextFromImages()
-    {
-        System.Console.WriteLine("Before join");
-        pdfThread.Join();
-        System.Console.WriteLine("After join");
-        // OCR
-        string exctractedText;
-        OCReader oCReader = new();
 
-        foreach (var imagePath in GetNewPngFiles())
+            Console.WriteLine("No more images to process.");
+        }
+
+        static void Main(string[] args)
         {
-            System.Console.WriteLine($"Performing OCR on {imagePath}...");
-            exctractedText = oCReader.PerformOCR(imagePath);
+            Console.WriteLine("Hello in Randomly! Let's check the numbers. Show me your file...");
+            string pdfPath = @"C:\Users\Hyperbook\Documents\Maciej\Randomly\src\Lotto chybił trafił.pdf";
+            Globals.PdfPath = pdfPath;
 
-            if (!string.IsNullOrWhiteSpace(exctractedText))
-            {
-            oCReader.SaveTextToFile(exctractedText, imagePath);
-            }
-            else
-            {
-            System.Console.WriteLine($"No text found in {imagePath}.");
-            }
+            PdfConverter pdfConverter = new PdfConverter();
+            PdfConverter.CreateSubfolder(pdfPath);
+
+            pdfThread = new Thread(() => pdfConverter.PdfToImages(pdfPath));
+            pdfThread.Name = "PdfThread";
+            pdfThread.Start();
+            pdfThread.Join();
+
+            watchThread = new Thread(Watcher);
+            watchThread.Name = "WatchThread";
+            watchThread.Start();
+
+            watchThread.Join();
+
         }
-        System.Console.WriteLine("No more images to process.");
-    }
-    static void Main(string[] args)
-    {
-        // Wgranie pliku
-        System.Console.WriteLine("Hello in Randomly! Let's check the numbers. Show me your file...");
-        string pdfPath = @"C:\Users\Hyperbook\Documents\Maciej\Randomly\src\Lotto chybił trafił.pdf";
-        Globals.PdfPath = pdfPath;
-
-        // Konwersja na png
-        PdfConverter pdfConverter = new PdfConverter();
-
-        // Tworzenie podfolderu
-        PdfConverter.CreateSubfolder(pdfPath);
-
-        pdfThread = new Thread(() => pdfConverter.PdfToImages(pdfPath));
-        pdfThread.Name = "PdfThread";
-        pdfThread.Start();
-        
-        extractedTextThread = new Thread(() => extractTextFromImages());
-        extractedTextThread.Name = "ExtractedTextThread";
-        extractedTextThread.Start();
-
-
-        // foreach (string imagePath in subfolder)
-        // {
-        //     exctractedText = oCReader.PerformOCR(imagePath);
-
-        //     if (!string.IsNullOrWhiteSpace(exctractedText))
-        //     {
-        //         oCReader.SaveTextToFile(exctractedText, imagePath);
-        //     }
-        //     else
-        //     {
-        //         System.Console.WriteLine($"No text found in {imagePath}.");
-        //     }
-        // }
-       
     }
 }
