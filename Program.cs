@@ -39,10 +39,10 @@ namespace Randomly
                 lock (existingFiles)
                 {
 
-                    // if (existingFiles.Add(e.FullPath))
-                    // {
-                    //     newFiles.Enqueue(e.FullPath);
-                    // }
+                    if (existingFiles.Add(e.FullPath))
+                    {
+                        newFiles.Enqueue(e.FullPath);
+                    }
                 }
             };
             watcher.EnableRaisingEvents = true;        
@@ -87,7 +87,6 @@ namespace Randomly
             pdfThread = new Thread(() => pdfConverter.PdfToImages(pdfPath));
             pdfThread.Name = "PdfThread";
             pdfThread.Start();
-            pdfThread.Join();
 
             watchThread = new Thread(Watcher);
             watchThread.Name = "WatchThread";
