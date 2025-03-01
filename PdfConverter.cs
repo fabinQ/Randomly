@@ -25,14 +25,14 @@ public class PdfConverter
                     string imagePath = $"{Globals.Subfolder}\\Page_{i}{Globals.GetExtendedFromConverionedFile}"; // Nazwa pliku
                     bitmap.Save(imagePath); // Zapisz jako PNG
                     imagesPaths.Add(imagePath);
-                    Console.WriteLine($"Strona {i} zapisana jako obraz: {Path.GetFileName(imagePath)}");
+                    Console.WriteLine($"Page {i} saved as bitmap: {Path.GetFileName(imagePath)}");
                 }
             }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Błąd podczas konwersji PDF: {ex.Message}");
+            Console.WriteLine($"Error while convering PDF: {ex.Message}");
         }
 
     }
