@@ -12,65 +12,59 @@ namespace Randomly
         private static Thread pdfThread;
         private static Thread extractedTextThread;
         private static readonly ConcurrentQueue<string> newFiles = new();
+        private static readonly ManualResetEvent newFileEvent = new(false);
         private static string folderPath;
 
         private static IEnumerable<string> Watcher()
         {
-            folderPath = Globals.Subfolder ?? throw new ArgumentNullException("Subfolder cannot be null");
+            folderPath = Globals.Subfolder;
 
             Console.WriteLine($"Watching for new PNG files in '{folderPath}'");
 
-            using var watcher = new FileSystemWatcher(folderPath, "*" + Globals.GetExtendedFromConverionedFile);
+            var watcher = new FileSystemWatcher(folderPath, "*" + Globals.GetExtendedFromConverionedFile);
+            var newFilePaths = new List<string>();
+            var fileCreatedEvent = new ManualResetEvent(false);
+
             watcher.Created += (sender, e) =>
             {
                 Console.WriteLine($"New file: {e.FullPath}");
-                newFiles.Enqueue(e.FullPath);
+                newFilePaths.Add(e.FullPath);
+                fileCreatedEvent.Set();
             };
-            watcher.EnableRaisingEvents = true;        
-            
-            while (true)
-            {
-                while (newFiles.TryDequeue(out var newFile))
-                {
-                    yield return newFile;
-                }
-                // Thread.Sleep(500);
-            }
+            watcher.EnableRaisingEvents = true;
+
+            fileCreatedEvent.WaitOne();
+            return newFilePaths;
         }
         private static IEnumerable<string> GetFiles()
         {
             var processedFiles = new HashSet<string>();
+            folderPath = Globals.Subfolder;
             if (Directory.EnumerateFileSystemEntries(folderPath).Any())
             {
                 foreach (var file in Directory.EnumerateFiles(folderPath, "*" + Globals.GetExtendedFromConverionedFile))
                 {
-                if (processedFiles.Add(file))
+                    if (processedFiles.Add(file))
+                    {
+                        yield return file;
+                    }
+                }
+            }
+            else
+            {
+                foreach (var file in Watcher())
                 {
                     yield return file;
                 }
-                }
-            }
 
-            while (true)
-            {
-            while (newFiles.TryDequeue(out var newFile))
-            {
-                if (processedFiles.Add(newFile))
-                {
-                yield return newFile;
-                }
-            }
-            Thread.Sleep(500);
             }
         }
 
         private static void ExtractTextFromImages()
         {
             OCReader oCReader = new();
-            while (true)
+            foreach(var imagePath in GetFiles())
             {
-                var imagePath1 = GetFiles();
-                string imagePath = imagePath1.FirstOrDefault();
                 Console.WriteLine($"Performing OCR on {imagePath}...");
                 
                 string extractedText = oCReader.PerformOCR(imagePath);
@@ -95,6 +89,7 @@ namespace Randomly
             extractedTextThread = new Thread(ExtractTextFromImages);
             extractedTextThread.Name = "ExtractedTextThread";
             extractedTextThread.Start();
+            // extractedTextThread.Join();
 
         }
     }
